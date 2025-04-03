@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="manifest" href="manifest.json">
+  <title>Unterrichts-Störer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .student {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 0.5rem;
+    }
+    .student.red {
+      background: #fdd;
+    }
+    .name {
+      flex: 1;
+    }
+    .buttons button {
+      margin: 0 2px;
+    }
+    #addStudent, #resetAll {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 1rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Unterrichts-Störer</h1>
+  <div id="list"></div>
+  <button id="addStudent">+ SchülerIn hinzufügen</button>
+  <button id="resetAll">Alle zurücksetzen</button>
+
+  <script>
+    let students = JSON.parse(localStorage.getItem('students') || '[]');
+
+    function save() {
+      localStorage.setItem('students', JSON.stringify(students));
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      students.sort((a, b) => a.name.localeCompare(b.name));
+
+      for (let s of students) {
+        const div = document.createElement('div');
+        div.className = 'student' + (s.minutes >= 30 ? ' red' : '');
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = `${s.name}: ${s.minutes} min`;
+
+        const buttons = document.createElement('div');
+        buttons.className = 'buttons';
+
+        ['+5', '-5', '-30'].forEach(change => {
+          const btn = document.createElement('button');
+          btn.textContent = change;
+          btn.onclick = () => {
+            if (change === '+5') s.minutes += 5;
+            if (change === '-5') s.minutes = Math.max(0, s.minutes - 5);
+            if (change === '-30') s.minutes = Math.max(0, s.minutes - 30);
+            save();
+            render();
+          };
+          buttons.appendChild(btn);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.onclick = () => {
+          if (confirm(`SchülerIn '${s.name}' löschen?`)) {
+            students = students.filter(x => x !== s);
+            save();
+            render();
+          }
+        };
+        buttons.appendChild(delBtn);
+
+        div.appendChild(name);
+        div.appendChild(buttons);
+        list.appendChild(div);
+      }
+    }
+
+    document.getElementById('addStudent').onclick = () => {
+      const name = prompt('Name der SchülerIn:');
+      if (name) {
+        students.push({ name, minutes: 0 });
+        save();
+        render();
+      }
+    };
+
+    document.getElementById('resetAll').onclick = () => {
+      if (confirm('Wirklich alle Daten löschen?')) {
+        students = [];
+        save();
+        render();
+      }
+    };
+
+    render();
+  </script>
+</body>
+</html>
